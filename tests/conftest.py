@@ -1,4 +1,5 @@
 from pymocker.catalogues.halo import HaloCatalogue
+from pymocker.positioners import NFWPositioner
 import numpy as np
 import pytest
 
@@ -9,8 +10,19 @@ def create_random_halo_catalogue():
     pos = np.random.random((n, 3))
     vel = np.random.random((n, 3))
     mass = np.random.random((n,))
+    concentration = np.random.random((n,))
     boxsize = 1.0
     redshift = 0.0
     return HaloCatalogue(
-        pos=pos, vel=vel, mass=mass, boxsize=boxsize, redshift=redshift
+        pos=pos,
+        vel=vel,
+        mass=mass,
+        concentration=concentration,
+        boxsize=boxsize,
+        redshift=redshift,
     )
+
+
+@pytest.fixture(name="nfw_pos", scope="session")
+def create_nfw():
+    return NFWPositioner()
