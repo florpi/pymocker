@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import Optional
+from pathlib import Path
 import pandas as pd
+import numpy as np
 
 class Catalogue(ABC):
     def __len__(self,) -> int:
