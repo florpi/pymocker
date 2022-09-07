@@ -5,8 +5,8 @@ from pymocker.catalogues.halo import HaloCatalogue
 
 class Positioner(ABC):
     def get_pos(
-        self, halo_cat: HaloCatalogue, n_tracers: np.array[int], **kwargs
-    ) -> np.array[float]:
+        self, halo_cat: HaloCatalogue, n_tracers: np.array, **kwargs
+    ) -> np.array:
         """Abstract class describing a positioner
 
         Args:
@@ -20,7 +20,7 @@ class Positioner(ABC):
 
 
 class IdentityPositioner(Positioner):
-    def get_pos(self, halo_cat: HaloCatalogue, **kwargs) -> np.array[float]:
+    def get_pos(self, halo_cat: HaloCatalogue, **kwargs) -> np.array:
         """Sample tracers only where halos are
 
         Args:
