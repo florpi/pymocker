@@ -26,3 +26,6 @@ class HaloCatalogue(Catalogue):
         self.mass = mass
         self.boxsize = boxsize
         self.redshift = redshift
+        self.attrs_to_frame = [
+            "mass",
+        ]
