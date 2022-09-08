@@ -101,6 +101,30 @@ class NFWPositioner(Positioner):
         )
         return scaled_radial_positions * halo_cat.radius
 
+    def convert_r_to_3d_pos(
+        self,
+        r: np.array,
+        seed: Optional[int] = 42,
+    ) -> Tuple[np.array, np.array, np.array]:
+        """Sample 3D positions for galaxies, isotropically following an NFW profile
+
+        Args:
+            r (np.array): distance from halo centre
+            seed (Optional[int], optional): random seed. Defaults to 42.
+
+        Returns:
+            np.array: x,y,z coordinates
+        """
+        key = random.PRNGKey(seed)
+        cos_t = 2.0 * random.uniform(key, shape=(len(r),)) - 1.0
+        key, subkey = jax.random.split(key)
+        phi = 2 * jnp.pi * random.uniform(subkey, shape=(len(r),))
+        sin_t = jnp.sqrt((1.0 - cos_t * cos_t))
+        x = r * sin_t * jnp.cos(phi)
+        y = r * sin_t * jnp.sin(phi)
+        z = r * cos_t
+        return x, y, z
+
     def get_pos(self, halo_cat: HaloCatalogue, n_tracers: np.array) -> np.array:
         """Sample positions of tracers according to an NFW profile
 
