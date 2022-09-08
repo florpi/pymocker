@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from pymocker.positioners import IdentityPositioner
 
 
@@ -28,10 +29,29 @@ class TestSatellitePositioners:
         halo_cat,
         nfw_pos,
     ):
+        c = 1.0
+        halo_cat.concentration = c
+        r = nfw_pos.sample_scaled_radial_positions(
+            halo_cat=halo_cat,
+            n_tracers=100,
+        )
         # Test that we actually sample an NFW profile
-        pass
+        sorted_r = np.sort(r)
+        estimated_cdf = 1.0 * np.arange(len(r)) / (len(r) - 1)
+        estimated_cdf_at_r = ius(sorted_r, estimated_cdf)(r)
+        true_cdf = (np.log(1.0 + r * c) - r * c / (1 + r * c)) / (
+            np.log(1 + c) - c / (1 + c)
+        )
+        np.testing.assert_allclose(true_cdf, estimated_cdf_at_r, atol=0.05)
 
-    """
-    def test__satellite(self, halo_cat):
-        n_tracers = np.random.randint(low=0, high=100, size=(len(halo_cat),))
-    """
+    def test_r_to_3d(self, halo_cat, nfw_pos):
+        c = 1.0
+        halo_cat.concentration = c
+        halo_cat.radius = 1.0
+        r = nfw_pos.sample_scaled_radial_positions(
+            halo_cat=halo_cat,
+            n_tracers=100,
+        )
+        x, y, z = nfw_pos.convert_r_to_3d_pos(r, halo_cat)
+        r_recovered = np.sqrt(x**2 + y**2 + z**2)
+        np.testing.assert_allclose(r, r_recovered, rtol=0.001)

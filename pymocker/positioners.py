@@ -3,6 +3,7 @@ import numpy as np
 import jax.numpy as jnp
 from jax import random
 from scipy import special as scipy_special
+from typing import Optional, Tuple
 from pymocker.catalogues.halo import HaloCatalogue
 
 
@@ -69,7 +70,7 @@ class NFWPositioner(Positioner):
             -(1.0 / jnp.real(scipy_special.lambertw(-np.exp(-p - 1)))) - 1
         ) / halo_cat.concentration
 
-    def sample_radial_positions(
+    def sample_scaled_radial_positions(
         self,
         halo_cat: HaloCatalogue,
         n_tracers: int,
@@ -82,31 +83,25 @@ class NFWPositioner(Positioner):
             n_tracers (int): number of satellites to sample
             seed (int, optional): random seed (for reproducibility). Defaults to 42.
 
-        Raises:
-            ValueError: if radius not given
-
         Returns:
             np.array: radial distances from halo center for tracers, sampled
-            from an NFW profile
+            from an NFW profile, in units of the halo radius
         """
-        if halo_cat.radius is None:
-            raise ValueError(
-                "The halo catalogue ```halo_cat``` must have radius values for the NFW to work"
-            )
         key = random.PRNGKey(seed)
         uniforms = random.uniform(key, shape=(n_tracers,))
         scaled_radial_positions = self.apply_inverse_cdf(
             p=uniforms,
             halo_cat=halo_cat,
         )
-        return scaled_radial_positions * halo_cat.radius
+        return scaled_radial_positions
 
     def convert_r_to_3d_pos(
         self,
         r: np.array,
+        halo_cat: "HaloCatalogue",
         seed: Optional[int] = 42,
     ) -> Tuple[np.array, np.array, np.array]:
-        """Sample 3D positions for galaxies, isotropically following an NFW profile
+        """Convert scaled r for sampled galaxies into 3D coordinates
 
         Args:
             r (np.array): distance from halo centre
@@ -115,9 +110,14 @@ class NFWPositioner(Positioner):
         Returns:
             np.array: x,y,z coordinates
         """
+        if halo_cat.radius is None:
+            raise ValueError(
+                "The halo catalogue ```halo_cat``` must have radius values for the NFW to work"
+            )
+        r *= halo_cat.radius
         key = random.PRNGKey(seed)
         cos_t = 2.0 * random.uniform(key, shape=(len(r),)) - 1.0
-        key, subkey = jax.random.split(key)
+        key, subkey = random.split(key)
         phi = 2 * jnp.pi * random.uniform(subkey, shape=(len(r),))
         sin_t = jnp.sqrt((1.0 - cos_t * cos_t))
         x = r * sin_t * jnp.cos(phi)
