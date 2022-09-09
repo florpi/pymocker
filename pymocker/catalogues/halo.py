@@ -9,6 +9,7 @@ class HaloCatalogue(Catalogue):
         pos: np.array,
         vel: np.array,
         mass: np.array,
+        radius: Optional[np.array] = None,
         hid: Optional[np.array] = None,
         concentration: Optional[np.array] = None,
         boxsize: Optional[float] = None,
@@ -28,6 +29,7 @@ class HaloCatalogue(Catalogue):
         self.pos = pos
         self.vel = vel
         self.mass = mass
+        self.radius = radius
         if hid is None:
             self.hid = np.arange(len(pos))
         else:
@@ -88,6 +90,7 @@ class HaloCatalogue(Catalogue):
                     pos=pos,
                     vel=vel,
                     mass=mass,
+                    radius=radius,
                     boxsize=boxsize,
                     redshift=redshift,
                     hid=original_idx,
