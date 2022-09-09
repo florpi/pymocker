@@ -49,7 +49,7 @@ class NFWPositioner(Positioner):
         """
         return jnp.log(1 + c) - c / (1 + c)
 
-    def apply_inverse_cdf(self, p: np.array, halo_cat: HaloCatalogue) -> np.array:
+    def apply_inverse_cdf(self, p: np.array, halo_concentration: np.array) -> np.array:
         """Compute the inverse CDF for an NFW profile. It is used to transform
         an array of uniformly sampled random variables into an NFW profile
                https://arxiv.org/pdf/1805.09550.pdf (Eq 6)
@@ -61,18 +61,14 @@ class NFWPositioner(Positioner):
         Returns:
             np.array: random variables following an NFW profile
         """
-        if halo_cat.concentration is None:
-            raise ValueError(
-                "The halo catalogue ```halo_cat``` must have concentration values for the NFW to work"
-            )
-        p *= self.get_f(c=halo_cat.concentration)
+        p *= self.get_f(c=halo_concentration)
         return (
             -(1.0 / jnp.real(scipy_special.lambertw(-np.exp(-p - 1)))) - 1
-        ) / halo_cat.concentration
+        ) / halo_concentration
 
     def sample_scaled_radial_positions(
         self,
-        halo_cat: HaloCatalogue,
+        halo_concentration: np.array,
         n_tracers: int,
         seed: int = 42,
     ) -> np.array:
@@ -91,14 +87,14 @@ class NFWPositioner(Positioner):
         uniforms = random.uniform(key, shape=(n_tracers,))
         scaled_radial_positions = self.apply_inverse_cdf(
             p=uniforms,
-            halo_cat=halo_cat,
+            halo_concentration=halo_concentration,
         )
         return scaled_radial_positions
 
-    def convert_r_to_3d_pos(
+    def convert_scaled_r_to_3d_pos(
         self,
         r: np.array,
-        halo_cat: "HaloCatalogue",
+        halo_radius: np.array,
         seed: Optional[int] = 42,
     ) -> Tuple[np.array, np.array, np.array]:
         """Convert scaled r for sampled galaxies into 3D coordinates
@@ -110,11 +106,7 @@ class NFWPositioner(Positioner):
         Returns:
             np.array: x,y,z coordinates
         """
-        if halo_cat.radius is None:
-            raise ValueError(
-                "The halo catalogue ```halo_cat``` must have radius values for the NFW to work"
-            )
-        r *= halo_cat.radius
+        r *= halo_radius
         key = random.PRNGKey(seed)
         cos_t = 2.0 * random.uniform(key, shape=(len(r),)) - 1.0
         key, subkey = random.split(key)
@@ -125,14 +117,39 @@ class NFWPositioner(Positioner):
         z = r * cos_t
         return x, y, z
 
-    def get_pos(self, halo_cat: HaloCatalogue, n_tracers: np.array) -> np.array:
+    def get_pos(
+        self, halo_cat: HaloCatalogue, n_tracers_per_halo: np.array, seed: int = 42
+    ) -> np.array:
         """Sample positions of tracers according to an NFW profile
 
         Args:
             halo_cat (HaloCatalogue): halo catalogue to be populated
-            n_tracers (np.array[int]): number of tracers to draw for each halo
+            n_tracers_per_halo (np.array[int]): number of tracers to draw for each halo
 
         Returns:
             np.array[float]: positions of the desired tracers
         """
-        pass
+        halo_concentration = jnp.repeat(
+            halo_cat.concentration,
+            n_tracers_per_halo,
+        )
+        r = self.sample_scaled_radial_positions(
+            halo_concentration=halo_concentration,
+            n_tracers=jnp.sum(n_tracers_per_halo),
+            seed=seed,
+        )
+        halo_radius = jnp.repeat(
+            halo_cat.radius,
+            n_tracers_per_halo,
+        )
+        (delta_x, delta_y, delta_z,) = self.convert_scaled_r_to_3d_pos(
+            r=r,
+            halo_radius=halo_radius,
+            seed=seed,
+        )
+        halo_pos = jnp.repeat(
+            halo_cat.pos,
+            n_tracers_per_halo,
+            axis=0,
+        )
+        return halo_pos + np.vstack((delta_x, delta_y, delta_z)).T
