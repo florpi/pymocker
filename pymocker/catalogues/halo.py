@@ -40,13 +40,47 @@ class HaloCatalogue(Catalogue):
             "mass",
         ]
 
-    @classmethod
-    def from_forge(cls,):
 
-        return cls(
-            pos=pos,
-            vel=vel,
-            mass=mass,
-            boxsize=boxsize,
-            redshift=redshift,
-        )
+    def read_node(node: int = 0, snapshot=26, seed=2080, boxsize: int = 500):
+        # 2080 or 4257
+        boxsize = int(boxsize)
+        if boxsize == 1500:
+            fr_path = ru.NODES_FR_LARGE_DATA
+        else:
+            fr_path = ru.NODES_FR_DATA
+        for path_to_node in fr_path.glob(f"L{boxsize}*"):
+            if path_to_node.name.startswith(
+                f"L{boxsize}_N{ru.n_particles[boxsize]}_Seed_{seed}_Node_{str(node).zfill(3)}"
+            ):
+                return read_groups(path=path_to_node, snapshot=snapshot)
+        raise ValueError(f"{node} node not found")
+
+    @classmethod
+    def from_forge(cls, node: int = 0, snapshot: int = 20, box: int = 0, boxsize: float = 500., min_n_particles:int=100)->"HaloCatalogue":
+        import pymocker.catalogues.read_utils as ru
+        seed = ru.seeds[box]
+        if boxsize == 1500.:
+            data_path = ru.NODES_GR_LARGE_DATA
+        elif boxsize == 500.:
+            data_path = ru.NODES_GR_DATA
+        else:
+            raise ValueError(f'Boxsize {boxsize} does not exist')
+        for path_to_node in data_path.glob(f"L{int(boxsize)}*"):
+            if path_to_node.name.startswith(
+                f"L{int(boxsize)}_N{ru.n_particles[int(boxsize)]}_Seed_{seed}_Node_{str(node).zfill(3)}"
+            ):
+                data, redshift = ru.read_forge_groups(path_to_node,snapshot=snapshot,min_n_particles=min_n_particles)
+                pos = data[:, :3]
+                vel = data[:, 3:6]
+                mass = data[:, 6]
+                radius = data[:, 7]
+                original_idx = data[:,8]
+                return cls(
+                    pos=pos,
+                    vel=vel,
+                    mass=mass,
+                    boxsize=boxsize,
+                    redshift=redshift,
+                    hid=original_idx,
+                )
+        raise ValueError('Data not found!')

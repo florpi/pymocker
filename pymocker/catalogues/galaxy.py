@@ -19,3 +19,7 @@ class GalaxyCatalogue(Catalogue):
         self.gal_type = gal_type
         self.boxsize = boxsize
         self.redshift = redshift
+        self.attrs_to_frame = [
+            "host_id", "gal_type"
+        ]
+

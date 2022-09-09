@@ -15,6 +15,6 @@ class Populator:
         halo_cat: HaloCatalogue,
         galaxy: "Galaxy",
     ) -> GalaxyCatalogue:
-        central_cat = self.central_sampler(halo_cat=halo_cat, galaxy=galaxy)
-        satellite_cat = self.satellite_sampler(halo_cat=halo_cat, galaxy=galaxy)
+        central_cat = self.central_sampler(halo_cat=halo_cat, galaxy=galaxy, gal_type='central')
+        satellite_cat = self.satellite_sampler(halo_cat=halo_cat, galaxy=galaxy, gal_type='satellite')
         return central_cat + satellite_cat
