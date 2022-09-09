@@ -1,13 +1,19 @@
 from abc import ABC, abstractmethod
+from functools import partial
 from pymocker.galaxy import Galaxy, VanillaGalaxy
 import numpy as np
 from jax.scipy import special
+from jax import random, jit
 import jax.numpy as jnp
 
 
 class Occupation(ABC):
     @abstractmethod
-    def get_mean_occ(self, halo_property, galaxy: Galaxy) -> np.array:
+    def get_mean_occ(self, halo_property: np.array, galaxy: Galaxy) -> np.array:
+        pass
+
+    @abstractmethod
+    def __call__(self, halo_cat: "HaloCatalogue") -> np.array:
         pass
 
 
@@ -31,6 +37,28 @@ class Zheng07Centrals(Occupation):
         return 0.5 * special.erfc(
             jnp.log10(galaxy.M_min / halo_mass) / galaxy.sigma_log_M
         )
+
+    # @partial(jit, static_argnums=(0,))
+    def __call__(
+        self, halo_cat: "HaloCatalogue", galaxy: VanillaGalaxy, seed: int = 42
+    ) -> np.array:
+        """Sample number of galaxies per halo
+
+        Args:
+            halo_cat (HaloCatalogue): halo catalogue to sample from
+            galaxy (VanillaGalaxy): galaxy parameters
+            seed (int, optional): random seed. Defaults to 42.
+
+        Returns:
+            np.array: number of galaxies per halo
+        """
+        key = random.PRNGKey(seed)
+        mean_n = self.get_mean_occ(
+            halo_mass=halo_cat.mass,
+            galaxy=galaxy,
+        )
+        randoms = random.uniform(key, shape=(len(mean_n),))
+        return (mean_n > randoms).astype(int)
 
 
 class Zheng07Sats(Occupation):
@@ -70,8 +98,25 @@ class Zheng07Sats(Occupation):
         Returns:
             np.array: mean number of galaxies
         """
-        return jnp.where(
-            halo_mass > galaxy.kappa * galaxy.M_min,
-            n_centrals * self.lambda_sat(halo_mass=halo_mass, galaxy=galaxy),
-            0.0,
+        return n_centrals * self.lambda_sat(halo_mass=halo_mass, galaxy=galaxy)
+
+    def __call__(
+        self,
+        halo_cat: "HaloCatalogue",
+        galaxy: VanillaGalaxy,
+        seed: int = 42,
+    ) -> np.array:
+        """Sample number of satellite galaxies per halo
+
+        Args:
+            halo_cat (HaloCatalogue): halo catalogue to sample from.
+            galaxy (VanillaGalaxy): galaxy parameters.
+            seed (int, optional): random seed. Defaults to 42.
+
+        Returns:
+            np.array: array of number of satellites per halo
+        """
+        key = random.PRNGKey(seed)
+        return random.poisson(
+            key, self.lambda_sat(halo_mass=halo_cat.mass, galaxy=galaxy)
         )
