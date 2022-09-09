@@ -32,3 +32,14 @@ class HaloCatalogue(Catalogue):
         self.attrs_to_frame = [
             "mass",
         ]
+
+    @classmethod
+    def from_forge(cls,):
+
+        return cls(
+            pos=pos,
+            vel=vel,
+            mass=mass,
+            boxsize=boxsize,
+            redshift=redshift,
+        )
