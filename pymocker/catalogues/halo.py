@@ -1,5 +1,6 @@
 from pymocker.catalogues.base import Catalogue
 import numpy as np
+from pathlib import Path
 from typing import Optional
 
 
@@ -95,4 +96,36 @@ class HaloCatalogue(Catalogue):
                     redshift=redshift,
                     hid=original_idx,
                 )
+        raise ValueError("Data not found!")
+
+
+    @classmethod
+    def from_abacus(
+        cls,
+        node: int = 0,
+        phase: int = 0,
+        redshift: float = 0.575,
+        boxsize: float = 2000.0,
+        min_n_particles: int = 100,
+    ) -> "HaloCatalogue":
+        import pymocker.catalogues.read_utils as ru
+
+        data = ru.read_abacus_groups(
+            boxsize=boxsize, node=node, phase=phase,
+            redshift=redshift, min_n_particles=min_n_particles
+        )
+        pos = data[:, :3]
+        vel = data[:, 3:6]
+        mass = data[:, 6]
+        radius = data[:, 7]
+        hid = data[:, 8]
+        return cls(
+            pos=pos,
+            vel=vel,
+            mass=mass,
+            radius=radius,
+            boxsize=boxsize,
+            redshift=redshift,
+            hid=hid,
+        )
         raise ValueError("Data not found!")

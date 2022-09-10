@@ -2,6 +2,7 @@ import numpy as np
 import h5py
 
 from pathlib import Path
+import os.path
 import h5py
 import logging
 
@@ -21,6 +22,9 @@ NODES_GR_DATA = Path("/cosma8/data/dp203/bl267/FORGE_LCDM/small_boxes/")
 NODES_FR_LARGE_DATA = Path("/cosma7/data/dp004/bl267/Runs/CosmicEmulator_Large/")
 NODES_GR_LARGE_DATA = Path("/cosma8/data/dp203/bl267/FORGE_LCDM/large_boxes/")
 
+ABACUS_BASE = Path("/global/cfs/cdirs/desi/cosmosim/Abacus/")
+ABACUS_SMALL = Path("/global/cfs/cdirs/desi/cosmosim/Abacus/small")
+
 n_particles = {
         500: 1024,
         1500: 512,
@@ -32,6 +36,44 @@ def get_attrs_header(path, attrs):
         for attr in attrs:
             attrs_in_header[attr] = fin["Header"].attrs[attr]
     return attrs_in_header
+
+
+def read_abacus_groups(boxsize, node, phase, redshift, min_n_particles=100):
+    from abacusnbody.data.compaso_halo_catalog import CompaSOHaloCatalog
+
+    if boxsize == 2000.0:
+        data_path = Path(
+            ABACUS_BASE,
+            f"AbacusSummit_base_c{node:03}_ph{phase:03}/halos/z{redshift}/"
+        )
+    elif boxsize == 500.0:
+        data_path = Path(
+            ABACUS_SMALL,
+            f"AbacusSummit_small_c{node:03}_ph{phase:03}/halos/z{redshift}/"
+        )
+    else:
+        raise ValueError(f"Boxsize {boxsize} does not exist")
+
+    if os.path.isdir(data_path):
+        logger.info(f"Reading groups in {data_path}")
+    else:
+        raise ValueError(f"{data_path} not found")
+
+    cat = CompaSOHaloCatalog(str(data_path),
+        fields=['id', 'N', 'x_com', 'v_com', 'SO_radius'])
+
+    particle_mass = 2109081520.453063  # in Msun / h
+    halo_id = cat.halos['id']    
+    n_particles = cat.halos['N']
+    radius = cat.halos['SO_radius']
+    mass = n_particles * particle_mass
+    pos = cat.halos['x_com'].data + boxsize / 2
+    vel = cat.halos['v_com'].data
+    data = np.c_[pos, vel, mass, radius, halo_id]
+    mask = n_particles >= min_n_particles
+    data = data[mask]
+    print(np.shape(data))
+    return data
 
 
 def read_forge_groups(path, snapshot, min_n_particles=100):
