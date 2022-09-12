@@ -15,6 +15,7 @@ class HaloCatalogue(Catalogue):
         concentration: Optional[np.array] = None,
         boxsize: Optional[float] = None,
         redshift: Optional[float] = None,
+        param_dict: Optional = None,
     ):
         """Catalogue of dark matter halos
 
@@ -26,6 +27,7 @@ class HaloCatalogue(Catalogue):
             concentration (Optional[np.array], optional): halo concentration, used for NFW profiles. Defaults to None.
             boxsize (Optional[float], optional): size of the simulated box. Defaults to None.
             redshift (Optional[float], optional): redshift of simulated snapshot. Defaults to None.
+            param_dict: Dictionary with parameters used to run the simulation
         """
         self.pos = pos
         self.vel = vel
@@ -39,6 +41,7 @@ class HaloCatalogue(Catalogue):
         self.concentration = concentration
         self.boxsize = boxsize
         self.redshift = redshift
+        self.param_dict = param_dict
         self.attrs_to_frame = [
             "mass",
         ]
@@ -62,19 +65,20 @@ class HaloCatalogue(Catalogue):
         cls,
         node: int = 0,
         snapshot: int = 20,
-        box: int = 0,
+        phase: int = 0,
         boxsize: float = 500.0,
         min_n_particles: int = 100,
     ) -> "HaloCatalogue":
         import pymocker.catalogues.read_utils as ru
 
-        seed = ru.seeds[box]
+        seed = ru.seeds[phase]
         if boxsize == 1500.0:
             data_path = ru.NODES_GR_LARGE_DATA
         elif boxsize == 500.0:
             data_path = ru.NODES_GR_DATA
         else:
             raise ValueError(f"Boxsize {boxsize} does not exist")
+        param_dict = ru.get_forge_params(node=node)
         for path_to_node in data_path.glob(f"L{int(boxsize)}*"):
             if path_to_node.name.startswith(
                 f"L{int(boxsize)}_N{ru.n_particles[int(boxsize)]}_Seed_{seed}_Node_{str(node).zfill(3)}"
@@ -95,6 +99,7 @@ class HaloCatalogue(Catalogue):
                     boxsize=boxsize,
                     redshift=redshift,
                     hid=original_idx,
+                    param_dict=param_dict
                 )
         raise ValueError("Data not found!")
 

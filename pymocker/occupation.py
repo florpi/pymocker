@@ -120,3 +120,19 @@ class Zheng07Sats(Occupation):
         return random.poisson(
             key, self.lambda_sat(halo_mass=halo_cat.mass, galaxy=galaxy)
         )
+
+class AemulusSatellites(Zheng07Sats):
+    def lambda_sat(self, halo_mass: np.array, galaxy: VanillaGalaxy) -> np.array:
+        """
+        https://iopscience.iop.org/article/10.3847/1538-4357/ab0d7b/pdf Eq7
+
+        Args:
+            halo_mass (np.array): mass of each halo to populate
+            galaxy (VanillaGalaxy): instance of the HOD parameters to use
+
+        Returns:
+            np.array: lambda value
+        """
+        return (halo_mass / galaxy.M_sat) ** galaxy.alpha * np.exp(
+            -galaxy.M_cut / halo_mass
+        )

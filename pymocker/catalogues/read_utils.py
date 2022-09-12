@@ -1,6 +1,6 @@
 import numpy as np
 import h5py
-
+from typing import List, Dict, Tuple
 from pathlib import Path
 import os.path
 import h5py
@@ -28,17 +28,26 @@ ABACUS_SMALL = Path("/global/cfs/cdirs/desi/cosmosim/Abacus/small")
 n_particles = {
         500: 1024,
         1500: 512,
+        1:2,
 }
 
-def get_attrs_header(path, attrs):
-    attrs_in_header = {}
-    with h5py.File(path, "r") as fin:
-        for attr in attrs:
-            attrs_in_header[attr] = fin["Header"].attrs[attr]
-    return attrs_in_header
+def read_abacus_groups(boxsize: float, node: int, phase: float, redshift: float, min_n_particles: int=100) -> np.array:
+    """Read abacus data
 
+    Args:
+        boxsize (float): size of box to read, either 500. or 2000. 
+        node (int): node in latin hypercube to read
+        phase (float): phases of the initial conditions.
+        redshift (float): redshift to read.
+        min_n_particles (int, optional): Minimum number of particles per halo. Defaults to 100.
 
-def read_abacus_groups(boxsize, node, phase, redshift, min_n_particles=100):
+    Raises:
+        ValueError: if boxsize is not 500 or 2000 
+        ValueError: if data path does not exist 
+
+    Returns:
+        np.array: halo data 
+    """
     from abacusnbody.data.compaso_halo_catalog import CompaSOHaloCatalog
 
     if boxsize == 2000.0:
@@ -72,12 +81,38 @@ def read_abacus_groups(boxsize, node, phase, redshift, min_n_particles=100):
     data = np.c_[pos, vel, mass, radius, halo_id]
     mask = n_particles >= min_n_particles
     data = data[mask]
-    print(np.shape(data))
     return data
 
 
-def read_forge_groups(path, snapshot, min_n_particles=100):
-    # https://arepo-code.org/wp-content/userguide/snapshotformat.html
+def get_attrs_header(path: Path, attrs: List[str])->Dict:
+    """Get attributes from header
+
+    Args:
+        path (Path): path to hdf5 file where the simulation is stored 
+        attrs (List[str]): list of attributes to retrieve
+
+    Returns:
+        attrs_in_header (Dict): dictionary with the attributes
+    """
+    attrs_in_header = {}
+    with h5py.File(path, "r") as fin:
+        for attr in attrs:
+            attrs_in_header[attr] = fin["Header"].attrs[attr]
+    return attrs_in_header
+
+
+def read_forge_groups(path: Path, snapshot: int, min_n_particles: int=100) -> Tuple[np.array, float]:
+    """ Function to read data from forge group catalogues.
+    For info about units see: https://arepo-code.org/wp-content/userguide/snapshotformat.html
+
+    Args:
+        path (Path): path to where group catalogues are stored .
+        snapshot (int): snapshot to read.
+        min_n_particles (int, optional): Minimum number of particles per halo. Defaults to 100.
+
+    Returns:
+        Tuple[np.array, float]: halo data and redshift 
+    """
     logger.info(f"Reading groups in {path}")
     group_dir = f"groups_{str(snapshot).zfill(3)}"
     data = np.empty((0, 10)) 
@@ -114,3 +149,21 @@ def read_forge_groups(path, snapshot, min_n_particles=100):
     data = np.c_[data, vel_disp]
     data = data[data[:, -2] >= min_n_particles]
     return data, redshift
+
+def get_forge_params(node: int)->Dict[str, float]:
+    """Get the parameters used to run the simulation
+
+    Args:
+        node (int): node to read 
+
+    Returns:
+        Dict[str, float]: dictionary of parameters and their values 
+    """
+    import pandas as pd
+    data_dir = Path('/cosma6/data/dp004/dc-arno1/CosmicEmulatorNodes/')
+    param_df = pd.read_csv(data_dir / 'Nodes_Omm-S8-h-fR0-sigma8-As-B0_LHCrandommaximin_Seed1_Nodes50_Dim4_AddFidTrue_extended.dat',
+                delimiter=r"\s+", skipfooter=2)
+    param_df = param_df.drop(columns=['A_s'])
+    param_df = param_df.apply(pd.to_numeric)
+    return param_df.iloc[node].to_dict()
+

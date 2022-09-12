@@ -2,7 +2,7 @@ from pymocker.catalogues import HaloCatalogue
 from pymocker.populator import Populator
 from pymocker.galaxy import VanillaGalaxy
 from pymocker.sampler import Sampler
-from pymocker.occupation import Zheng07Centrals, Zheng07Sats
+from pymocker.occupation import Zheng07Centrals, AemulusSatellites 
 from pymocker.positioners import IdentityPositioner, NFWPositioner
 
 halo_cat = HaloCatalogue.from_forge(node=1, snapshot=20)
@@ -11,7 +11,7 @@ central_sampler = Sampler(
     positioner=IdentityPositioner(),
 )
 sat_sampler = Sampler(
-    occupation=Zheng07Sats(),
+    occupation=AemulusSatellites(),
     positioner=NFWPositioner(),
 )
 populator = Populator(
