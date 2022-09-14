@@ -36,7 +36,7 @@ def test__read_abacus():
 
 
 def test__read_forge():
-    halos = HaloCatalogue.from_forge(node=1, phase=0, snapshot=16, boxsize=1500.0)
+    halos = HaloCatalogue.from_forge(node=0, phase=0, snapshot=16, boxsize=1500.0)
     assert (halos.pos[:, :].min() >= 0) and halos.pos[:, :].max() <= 1500.0
 
     halos = HaloCatalogue.from_forge(node=3, phase=0, snapshot=16, boxsize=500)

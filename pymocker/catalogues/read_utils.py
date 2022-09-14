@@ -19,6 +19,7 @@ GRFR_DATA = Path("/cosma6/data/dp004/dc-arno1/CosmicEmulator/")
 NDGP_DATA = Path("/cosma8/data/dp004/dc-hern1/CosmicEmulatorPlanck2018/")
 NODES_FR_DATA = Path("/cosma6/data/dp004/dc-arno1/CosmicEmulatorNodes/")
 NODES_GR_DATA = Path("/cosma8/data/dp203/bl267/FORGE_LCDM/small_boxes/")
+NODE0_GR_DATA = Path("/madfs/data/dc-arno1/CosmicEmulatorNodes/")
 NODES_FR_LARGE_DATA = Path("/cosma7/data/dp004/bl267/Runs/CosmicEmulator_Large/")
 NODES_GR_LARGE_DATA = Path("/cosma8/data/dp203/bl267/FORGE_LCDM/large_boxes/")
 
