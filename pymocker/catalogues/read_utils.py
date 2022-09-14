@@ -167,3 +167,23 @@ def get_forge_params(node: int)->Dict[str, float]:
     param_df = param_df.apply(pd.to_numeric)
     return param_df.iloc[node].to_dict()
 
+
+def get_abacus_params(node: int)->Dict[str, float]:
+    """Get the parameters used to run the simulation
+
+    Args:
+        node (int): node to read 
+
+    Returns:
+        Dict[str, float]: dictionary of parameters and their values 
+    """
+    import pandas as pd
+    data_dir = Path('/global/homes/e/epaillas/data/ds_desi/')
+    param_df = pd.read_csv(data_dir / 'AbacusSummit_cosmologies.csv',
+                delimiter=",", skipinitialspace=True)
+    param_df.columns = param_df.columns.str.strip()
+    param_df = param_df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+    idx = param_df.index[param_df['root'] == f'abacus_cosm{node:03}'][0]
+    param_df = param_df.drop(columns=['A_s', 'N_ur', 'N_ncdm',
+        'omega_ncdm', 'sigma8_cb', 'notes', 'root'])
+    return param_df.to_dict('records')[idx]

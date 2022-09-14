@@ -124,6 +124,7 @@ class HaloCatalogue(Catalogue):
         mass = data[:, 6]
         radius = data[:, 7]
         hid = data[:, 8]
+        param_dict = ru.get_abacus_params(node=node)
         return cls(
             pos=pos,
             vel=vel,
@@ -132,5 +133,6 @@ class HaloCatalogue(Catalogue):
             boxsize=boxsize,
             redshift=redshift,
             hid=hid,
+            param_dict=param_dict
         )
         raise ValueError("Data not found!")
