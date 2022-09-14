@@ -28,7 +28,6 @@ ABACUS_SMALL = Path("/global/cfs/cdirs/desi/cosmosim/Abacus/small")
 n_particles = {
         500: 1024,
         1500: 512,
-        1:2,
 }
 
 def read_abacus_groups(boxsize: float, node: int, phase: float, redshift: float, min_n_particles: int=100) -> np.array:
