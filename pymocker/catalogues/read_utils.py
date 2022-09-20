@@ -31,7 +31,8 @@ n_particles = {
         1500: 512,
 }
 
-def read_abacus_groups(boxsize: float, node: int, phase: float, redshift: float, min_n_particles: int=100) -> np.array:
+def read_abacus_groups(boxsize: float, node: int, phase: float,
+    redshift: float, min_n_particles: int=100, include_particles: bool=False) -> np.array:
     """Read abacus data
 
     Args:
@@ -40,6 +41,8 @@ def read_abacus_groups(boxsize: float, node: int, phase: float, redshift: float,
         phase (float): phases of the initial conditions.
         redshift (float): redshift to read.
         min_n_particles (int, optional): Minimum number of particles per halo. Defaults to 100.
+        include_particles (bool, optional): Whether to include a subsample of dark matter
+        particle positions within haloes or not.
 
     Raises:
         ValueError: if boxsize is not 500 or 2000 
@@ -53,12 +56,12 @@ def read_abacus_groups(boxsize: float, node: int, phase: float, redshift: float,
     if boxsize == 2000.0:
         data_path = Path(
             ABACUS_BASE,
-            f"AbacusSummit_base_c{node:03}_ph{phase:03}/halos/z{redshift}/"
+            f"AbacusSummit_base_c{node:03}_ph{phase:03}/halos/z{redshift:3f}/"
         )
     elif boxsize == 500.0:
         data_path = Path(
             ABACUS_SMALL,
-            f"AbacusSummit_small_c{node:03}_ph{phase:03}/halos/z{redshift}/"
+            f"AbacusSummit_small_c{node:03}_ph{phase:03}/halos/z{redshift:.3f}/"
         )
     else:
         raise ValueError(f"Boxsize {boxsize} does not exist")
@@ -68,8 +71,13 @@ def read_abacus_groups(boxsize: float, node: int, phase: float, redshift: float,
     else:
         raise ValueError(f"{data_path} not found")
 
-    cat = CompaSOHaloCatalog(str(data_path),
-        fields=['id', 'N', 'x_com', 'v_com', 'SO_radius'])
+    if include_particles:
+        cat = CompaSOHaloCatalog(str(data_path),
+            fields=['id', 'N', 'x_com', 'v_com', 'SO_radius'],
+            subsamples=dict(A=True, pos=True))
+    else:
+        cat = CompaSOHaloCatalog(str(data_path),
+            fields=['id', 'N', 'x_com', 'v_com', 'SO_radius'])
 
     particle_mass = 2109081520.453063  # in Msun / h
     halo_id = cat.halos['id']    
@@ -78,9 +86,16 @@ def read_abacus_groups(boxsize: float, node: int, phase: float, redshift: float,
     mass = n_particles * particle_mass
     pos = cat.halos['x_com'].data + boxsize / 2
     vel = cat.halos['v_com'].data
-    data = np.c_[pos, vel, mass, radius, halo_id]
+    if include_particles:
+        npstart = cat.halos['npstartA']
+        npout = cat.halos['npoutA']
+        pos_dm = cat.subsamples['pos'] + boxsize / 2
+        data = np.c_[pos, vel, mass, radius, halo_id, npstart, npout]
+    else:
+        data = np.c_[pos, vel, mass, radius, halo_id]
     mask = n_particles >= min_n_particles
     data = data[mask]
+    if include_particles: return data, pos_dm
     return data
 
 
