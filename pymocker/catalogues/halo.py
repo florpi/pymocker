@@ -15,7 +15,10 @@ class HaloCatalogue(Catalogue):
         concentration: Optional[np.array] = None,
         boxsize: Optional[float] = None,
         redshift: Optional[float] = None,
-        param_dict: Optional = None,
+        param_dict: Optional[dict] = None,
+        dm_pos: Optional[np.array] = None,
+        npstart: Optional[np.array] = None,
+        npout: Optional[np.array] = None,
     ):
         """Catalogue of dark matter halos
 
@@ -42,6 +45,9 @@ class HaloCatalogue(Catalogue):
         self.boxsize = boxsize
         self.redshift = redshift
         self.param_dict = param_dict
+        self.dm_pos = dm_pos
+        self.npstart = npstart
+        self.npout = npout
         self.attrs_to_frame = [
             "mass",
         ]
@@ -92,7 +98,6 @@ class HaloCatalogue(Catalogue):
                 )
         raise ValueError("Data not found!")
 
-
     @classmethod
     def from_abacus(
         cls,
@@ -101,19 +106,27 @@ class HaloCatalogue(Catalogue):
         redshift: float = 0.575,
         boxsize: float = 2000.0,
         min_n_particles: int = 100,
+        include_particles: bool = False,
     ) -> "HaloCatalogue":
         import pymocker.catalogues.read_utils as ru
 
         data = ru.read_abacus_groups(
             boxsize=boxsize, node=node, phase=phase,
-            redshift=redshift, min_n_particles=min_n_particles
+            redshift=redshift, min_n_particles=min_n_particles,
+            include_particles=include_particles
         )
+        if include_particles: data, dm_pos = data
         pos = data[:, :3]
         vel = data[:, 3:6]
         mass = data[:, 6]
         radius = data[:, 7]
         hid = data[:, 8]
         param_dict = ru.get_abacus_params(node=node)
+        if include_particles:
+            npstart = data[:, 9].astype(int)
+            npout = data[:, 10].astype(int)
+        else:
+            npstart, npout, dm_pos = None, None, None
         return cls(
             pos=pos,
             vel=vel,
@@ -122,6 +135,9 @@ class HaloCatalogue(Catalogue):
             boxsize=boxsize,
             redshift=redshift,
             hid=hid,
-            param_dict=param_dict
+            param_dict=param_dict,
+            dm_pos=dm_pos,
+            npstart=npstart,
+            npout=npout
         )
         raise ValueError("Data not found!")

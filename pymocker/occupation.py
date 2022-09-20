@@ -133,6 +133,7 @@ class AemulusSatellites(Zheng07Sats):
         Returns:
             np.array: lambda value
         """
+        print(galaxy.M_cut)
         return (halo_mass / galaxy.M_sat) ** galaxy.alpha * np.exp(
             -galaxy.M_cut / halo_mass
         )

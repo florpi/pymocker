@@ -153,3 +153,26 @@ class NFWPositioner(Positioner):
             axis=0,
         )
         return halo_pos + np.vstack((delta_x, delta_y, delta_z)).T
+
+
+class ParticlePositioner(Positioner):
+    def get_pos(self, halo_cat: HaloCatalogue, n_tracers_per_halo: np.array,
+        seed: int = 42) -> np.array:
+        """Sample tracers using dark matter particle positions within
+        haloes
+
+        Args:
+            halo_cat (HaloCatalogue): halo catalogue to be populated
+            n_tracers_per_halo (np.array[int]): number of tracers to draw for each halo
+
+        Returns:
+            np.array[float]: positions of the desired tracers
+        """
+
+        np.random.seed(seed)
+        pos = []
+        for i in range(len(halo_cat)):
+            pos_i = halo_cat.dm_pos[halo_cat.npstart[i]:halo_cat.npstart[i] + halo_cat.npout[i]]
+            idx = np.random.randint(len(pos_i), size=n_tracers_per_halo[i])
+            pos.append(pos_i[idx])
+        return np.asarray(pos)
