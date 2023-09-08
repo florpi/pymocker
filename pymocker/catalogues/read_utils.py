@@ -199,6 +199,5 @@ def get_abacus_params(node: int)->Dict[str, float]:
     param_df.columns = param_df.columns.str.strip()
     param_df = param_df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
     idx = param_df.index[param_df['root'] == f'abacus_cosm{node:03}'][0]
-    param_df = param_df.drop(columns=['A_s', 'N_ur', 'N_ncdm',
-        'omega_ncdm', 'sigma8_cb', 'notes', 'root'])
+    param_df = param_df.drop(columns=['notes', 'root'])
     return param_df.to_dict('records')[idx]
